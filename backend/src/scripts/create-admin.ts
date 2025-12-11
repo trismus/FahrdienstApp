@@ -14,7 +14,7 @@ const createAdmin = async () => {
     // Check if admin user already exists
     const existingUser = await query('SELECT * FROM users WHERE username = $1', [adminUsername]);
 
-    if (existingUser.rowCount > 0) {
+    if (existingUser?.rowCount > 0) {
       console.log(`User "${adminUsername}" already exists. No action taken.`);
       return;
     }
@@ -32,7 +32,7 @@ const createAdmin = async () => {
       [adminUsername, adminEmail, passwordHash, adminRole]
     );
 
-    if (result.rowCount > 0) {
+    if (result?.rowCount > 0) {
       console.log('---');
       console.log('✅ Admin user created successfully!');
       console.log('---');

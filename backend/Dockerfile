@@ -11,6 +11,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Remove build-time only scripts that cause issues
+RUN rm -f src/scripts/create-admin.ts
+
 # Build TypeScript
 RUN npm run build
 

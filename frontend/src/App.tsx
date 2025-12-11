@@ -47,7 +47,7 @@ const commonNavItems = [
   { text: 'Verfügbarkeit', path: '/availability', icon: <EventAvailableIcon />, role: 'operator' },
   { text: 'Ziele', path: '/destinations', icon: <PlaceIcon />, role: 'operator' },
   { text: 'Fahrten', path: '/trips', icon: <DirectionsCarIcon />, role: 'operator' },
-  { text: 'Terminserie', path: '/recurring-trips', icon: <Repeat />, role: 'operator' },
+  { text: 'Terminserie', path: '/recurring-trips', icon: <RepeatIcon />, role: 'operator' },
   { text: 'Benutzer', path: '/users', icon: <SupervisorAccountIcon />, role: 'admin' },
 ];
 
