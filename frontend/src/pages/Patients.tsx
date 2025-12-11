@@ -12,7 +12,10 @@ function Patients() {
     date_of_birth: '',
     phone: '',
     email: '',
-    address: '',
+    street: '',
+    house_number: '',
+    city: '',
+    postal_code: '',
     medical_notes: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
@@ -72,7 +75,10 @@ function Patients() {
       date_of_birth: '',
       phone: '',
       email: '',
-      address: '',
+      street: '',
+      house_number: '',
+      city: '',
+      postal_code: '',
       medical_notes: '',
       emergency_contact_name: '',
       emergency_contact_phone: '',
@@ -132,9 +138,27 @@ function Patients() {
             />
             <input
               type="text"
-              placeholder="Address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Straße"
+              value={formData.street}
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Hausnummer"
+              value={formData.house_number}
+              onChange={(e) => setFormData({ ...formData, house_number: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="PLZ"
+              value={formData.postal_code}
+              onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Ort"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             />
             <input
               type="text"
@@ -183,7 +207,11 @@ function Patients() {
               <td>{patient.first_name} {patient.last_name}</td>
               <td>{patient.phone}</td>
               <td>{patient.email}</td>
-              <td>{patient.address}</td>
+              <td>
+                {patient.street && patient.house_number
+                  ? `${patient.street} ${patient.house_number}, ${patient.postal_code || ''} ${patient.city || ''}`.trim()
+                  : patient.address || '-'}
+              </td>
               <td>
                 {patient.emergency_contact_name}
                 {patient.emergency_contact_phone && ` (${patient.emergency_contact_phone})`}

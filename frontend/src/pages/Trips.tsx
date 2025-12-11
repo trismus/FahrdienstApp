@@ -9,10 +9,10 @@ function Trips() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [usePickupDestination, setUsePickupDestination] = useState(true);
+  const [usePickupDestination, setUsePickupDestination] = useState(false);
   const [useAppointmentDestination, setUseAppointmentDestination] = useState(true);
-  const [useDropoffDestination, setUseDropoffDestination] = useState(true);
-  const [useReturnPickupDestination, setUseReturnPickupDestination] = useState(true);
+  const [useDropoffDestination, setUseDropoffDestination] = useState(false);
+  const [useReturnPickupDestination, setUseReturnPickupDestination] = useState(false);
   const [hasReturn, setHasReturn] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState<string>('');
   const [formData, setFormData] = useState<Trip>({
@@ -46,6 +46,49 @@ function Trips() {
     }
   }, [formData.pickup_time]);
 
+  // Auto-fill pickup and dropoff addresses when patient is selected
+  useEffect(() => {
+    if (formData.patient_id && patients.length > 0) {
+      const selectedPatient = patients.find(p => p.id === formData.patient_id);
+      if (selectedPatient) {
+        const patientAddress = formatAddress(selectedPatient);
+        if (patientAddress) {
+          setFormData(prev => ({
+            ...prev,
+            pickup_address: !prev.pickup_destination_id ? patientAddress : prev.pickup_address,
+            dropoff_address: !prev.dropoff_destination_id ? patientAddress : prev.dropoff_address,
+          }));
+        }
+      }
+    }
+  }, [formData.patient_id, patients]);
+
+  // Auto-fill return pickup address when appointment location changes and hasReturn is true
+  useEffect(() => {
+    if (hasReturn) {
+      if (formData.appointment_destination_id && destinations.length > 0 && !useReturnPickupDestination) {
+        const appointmentDest = destinations.find(d => d.id === formData.appointment_destination_id);
+        if (appointmentDest) {
+          const appointmentAddress = formatAddress(appointmentDest);
+          setFormData(prev => ({
+            ...prev,
+            return_pickup_address: appointmentAddress,
+          }));
+        }
+      } else if (formData.appointment_address && !useReturnPickupDestination) {
+        setFormData(prev => ({
+          ...prev,
+          return_pickup_address: formData.appointment_address,
+        }));
+      } else if (formData.appointment_destination_id && useReturnPickupDestination) {
+        setFormData(prev => ({
+          ...prev,
+          return_pickup_destination_id: formData.appointment_destination_id,
+        }));
+      }
+    }
+  }, [hasReturn, formData.appointment_destination_id, formData.appointment_address, destinations, useReturnPickupDestination]);
+
   const loadData = async () => {
     try {
       const [tripsRes, patientsRes, destinationsRes] = await Promise.all([
@@ -61,6 +104,13 @@ function Trips() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatAddress = (item: Patient | Destination) => {
+    if (item.street && item.house_number) {
+      return `${item.street} ${item.house_number}, ${item.postal_code || ''} ${item.city || ''}`.trim();
+    }
+    return (item as any).address || '';
   };
 
   const loadAvailableDrivers = async () => {
@@ -230,10 +280,10 @@ function Trips() {
       status: 'scheduled',
       notes: '',
     });
-    setUsePickupDestination(true);
+    setUsePickupDestination(false);
     setUseAppointmentDestination(true);
-    setUseDropoffDestination(true);
-    setUseReturnPickupDestination(true);
+    setUseDropoffDestination(false);
+    setUseReturnPickupDestination(false);
     setHasReturn(false);
     setEditingTrip(null);
     setShowForm(false);
@@ -323,7 +373,7 @@ function Trips() {
                   <option value="">Abholort (Ziel) auswählen *</option>
                   {destinations.map((dest) => (
                     <option key={dest.id} value={dest.id}>
-                      {dest.name} - {dest.address}
+                      {dest.name} - {formatAddress(dest)}
                     </option>
                   ))}
                 </select>
@@ -369,7 +419,7 @@ function Trips() {
                   <option value="">Terminort (Ziel) auswählen *</option>
                   {destinations.map((dest) => (
                     <option key={dest.id} value={dest.id}>
-                      {dest.name} - {dest.address}
+                      {dest.name} - {formatAddress(dest)}
                     </option>
                   ))}
                 </select>
@@ -414,7 +464,7 @@ function Trips() {
                   <option value="">Zielort auswählen *</option>
                   {destinations.map((dest) => (
                     <option key={dest.id} value={dest.id}>
-                      {dest.name} - {dest.address}
+                      {dest.name} - {formatAddress(dest)}
                     </option>
                   ))}
                 </select>
@@ -471,7 +521,7 @@ function Trips() {
                       <option value="">Abholort für Rückfahrt auswählen</option>
                       {destinations.map((dest) => (
                         <option key={dest.id} value={dest.id}>
-                          {dest.name} - {dest.address}
+                          {dest.name} - {formatAddress(dest)}
                         </option>
                       ))}
                     </select>

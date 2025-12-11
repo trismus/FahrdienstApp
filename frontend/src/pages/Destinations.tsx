@@ -18,7 +18,8 @@ function Destinations() {
   const [formData, setFormData] = useState<Destination>({
     name: '',
     type: 'hospital',
-    address: '',
+    street: '',
+    house_number: '',
     city: '',
     postal_code: '',
     phone: '',
@@ -79,7 +80,8 @@ function Destinations() {
     setFormData({
       name: '',
       type: 'hospital',
-      address: '',
+      street: '',
+      house_number: '',
       city: '',
       postal_code: '',
       phone: '',
@@ -131,22 +133,27 @@ function Destinations() {
             </select>
             <input
               type="text"
-              placeholder="Adresse *"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              required
+              placeholder="Straße"
+              value={formData.street}
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
             />
             <input
               type="text"
-              placeholder="Stadt"
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              placeholder="Hausnummer"
+              value={formData.house_number}
+              onChange={(e) => setFormData({ ...formData, house_number: e.target.value })}
             />
             <input
               type="text"
               placeholder="PLZ"
               value={formData.postal_code}
               onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Ort"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             />
             <input
               type="tel"
@@ -210,7 +217,11 @@ function Destinations() {
             <tr key={destination.id}>
               <td><strong>{destination.name}</strong></td>
               <td>{getTypeLabel(destination.type)}</td>
-              <td>{destination.address}</td>
+              <td>
+                {destination.street && destination.house_number
+                  ? `${destination.street} ${destination.house_number}`
+                  : destination.address || '-'}
+              </td>
               <td>
                 {destination.city && destination.postal_code
                   ? `${destination.postal_code} ${destination.city}`

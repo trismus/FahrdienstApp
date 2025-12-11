@@ -5,6 +5,7 @@ import Drivers from './pages/Drivers';
 import DriverAvailability from './pages/DriverAvailability';
 import Destinations from './pages/Destinations';
 import Trips from './pages/Trips';
+import RecurringTrips from './pages/RecurringTrips';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <li><Link to="/availability">Verfügbarkeit</Link></li>
             <li><Link to="/destinations">Ziele</Link></li>
             <li><Link to="/trips">Fahrten</Link></li>
+            <li><Link to="/recurring-trips">Terminserie</Link></li>
           </ul>
         </nav>
 
@@ -34,6 +36,7 @@ function App() {
             <Route path="/availability" element={<DriverAvailability />} />
             <Route path="/destinations" element={<Destinations />} />
             <Route path="/trips" element={<Trips />} />
+            <Route path="/recurring-trips" element={<RecurringTrips />} />
           </Routes>
         </main>
       </div>

@@ -16,7 +16,11 @@ export interface Patient {
   date_of_birth?: string;
   phone?: string;
   email?: string;
-  address?: string;
+  address?: string; // Deprecated - use structured fields below
+  street?: string;
+  house_number?: string;
+  city?: string;
+  postal_code?: string;
   medical_notes?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
@@ -38,7 +42,9 @@ export interface Destination {
   id?: number;
   name: string;
   type: 'hospital' | 'clinic' | 'practice' | 'rehab' | 'pharmacy' | 'other';
-  address: string;
+  address?: string; // Deprecated - use structured fields below
+  street?: string;
+  house_number?: string;
   city?: string;
   postal_code?: string;
   phone?: string;
