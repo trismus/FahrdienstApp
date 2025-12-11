@@ -27,13 +27,31 @@ export interface Driver {
   updated_at?: Date;
 }
 
+export interface Destination {
+  id?: number;
+  name: string;
+  type: 'hospital' | 'clinic' | 'practice' | 'rehab' | 'pharmacy' | 'other';
+  address: string;
+  city?: string;
+  postal_code?: string;
+  phone?: string;
+  email?: string;
+  contact_person?: string;
+  notes?: string;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 export interface Trip {
   id?: number;
   patient_id: number;
   driver_id?: number;
-  pickup_address: string;
+  pickup_destination_id?: number;
+  pickup_address?: string;
   pickup_time: Date;
-  dropoff_address: string;
+  dropoff_destination_id?: number;
+  dropoff_address?: string;
   dropoff_time?: Date;
   distance_km?: number;
   status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';

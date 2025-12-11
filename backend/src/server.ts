@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDatabase } from './database/connection';
 import patientRoutes from './routes/patient.routes';
 import driverRoutes from './routes/driver.routes';
+import destinationRoutes from './routes/destination.routes';
 import tripRoutes from './routes/trip.routes';
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.use('/api/patients', patientRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/destinations', destinationRoutes);
 app.use('/api/trips', tripRoutes);
 
 // Error handling middleware
