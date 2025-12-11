@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import Drivers from './pages/Drivers';
+import DriverAvailability from './pages/DriverAvailability';
 import Destinations from './pages/Destinations';
 import Trips from './pages/Trips';
 import './App.css';
@@ -19,6 +20,7 @@ function App() {
             <li><Link to="/">Dashboard</Link></li>
             <li><Link to="/patients">Patienten</Link></li>
             <li><Link to="/drivers">Fahrer</Link></li>
+            <li><Link to="/availability">Verfügbarkeit</Link></li>
             <li><Link to="/destinations">Ziele</Link></li>
             <li><Link to="/trips">Fahrten</Link></li>
           </ul>
@@ -29,6 +31,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/patients" element={<Patients />} />
             <Route path="/drivers" element={<Drivers />} />
+            <Route path="/availability" element={<DriverAvailability />} />
             <Route path="/destinations" element={<Destinations />} />
             <Route path="/trips" element={<Trips />} />
           </Routes>

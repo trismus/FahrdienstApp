@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { tripAPI, patientAPI, driverAPI, destinationAPI, type Trip, type Patient, type Driver, type Destination } from '../services/api';
+import { tripAPI, patientAPI, destinationAPI, availabilityAPI, type Trip, type Patient, type Destination, type AvailableDriver } from '../services/api';
 
 function Trips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [availableDriversList, setAvailableDriversList] = useState<AvailableDriver[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [usePickupDestination, setUsePickupDestination] = useState(true);
   const [useDropoffDestination, setUseDropoffDestination] = useState(true);
+  const [availabilityMessage, setAvailabilityMessage] = useState<string>('');
   const [formData, setFormData] = useState<Trip>({
     patient_id: 0,
     driver_id: undefined,
@@ -29,22 +30,55 @@ function Trips() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (formData.pickup_time) {
+      loadAvailableDrivers();
+    }
+  }, [formData.pickup_time]);
+
   const loadData = async () => {
     try {
-      const [tripsRes, patientsRes, driversRes, destinationsRes] = await Promise.all([
+      const [tripsRes, patientsRes, destinationsRes] = await Promise.all([
         tripAPI.getAll(),
         patientAPI.getAll(),
-        driverAPI.getAll(),
         destinationAPI.getActive(),
       ]);
       setTrips(tripsRes.data);
       setPatients(patientsRes.data);
-      setDrivers(driversRes.data);
       setDestinations(destinationsRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableDrivers = async () => {
+    if (!formData.pickup_time) {
+      setAvailableDriversList([]);
+      setAvailabilityMessage('');
+      return;
+    }
+
+    try {
+      const pickupDate = new Date(formData.pickup_time);
+      const date = pickupDate.toISOString().split('T')[0];
+      const time = pickupDate.toTimeString().split(' ')[0];
+
+      // Get available drivers for this date and time
+      const response = await availabilityAPI.getAvailable(date, time, time);
+      const availableDrivers = response.data;
+      setAvailableDriversList(availableDrivers);
+
+      if (availableDrivers.length === 0) {
+        setAvailabilityMessage('Keine Fahrer mit passenden Verfügbarkeitsmustern gefunden.');
+      } else {
+        setAvailabilityMessage(`${availableDrivers.length} Fahrer verfügbar.`);
+      }
+    } catch (error) {
+      console.error('Error loading available drivers:', error);
+      setAvailableDriversList([]);
+      setAvailabilityMessage('Fehler beim Laden der verfügbaren Fahrer.');
     }
   };
 
@@ -60,15 +94,52 @@ function Trips() {
         dropoff_address: useDropoffDestination ? undefined : formData.dropoff_address,
       };
 
+      // Validate driver availability if a driver is selected
+      if (formData.driver_id && formData.pickup_time) {
+        const matchingDriver = availableDriversList.find(
+          driver => driver.driver_id === formData.driver_id
+        );
+
+        if (!matchingDriver) {
+          alert('Der ausgewählte Fahrer hat kein Verfügbarkeitsmuster für diese Zeit. Bitte wählen Sie einen anderen Fahrer oder ändern Sie die Zeit.');
+          return;
+        }
+      }
+
+      let tripId: number;
       if (editingTrip) {
         await tripAPI.update(editingTrip.id!, tripData);
+        tripId = editingTrip.id!;
       } else {
-        await tripAPI.create(tripData);
+        const response = await tripAPI.create(tripData);
+        tripId = response.data.id!;
       }
+
+      // Create a booking if a driver is selected
+      if (formData.driver_id && formData.pickup_time) {
+        const pickupDate = new Date(formData.pickup_time);
+        const date = pickupDate.toISOString().split('T')[0];
+
+        const matchingDriver = availableDriversList.find(
+          driver => driver.driver_id === formData.driver_id
+        );
+
+        if (matchingDriver) {
+          await availabilityAPI.createBooking({
+            driver_id: formData.driver_id,
+            date: date,
+            start_time: matchingDriver.start_time,
+            end_time: matchingDriver.end_time,
+            trip_id: tripId,
+          });
+        }
+      }
+
       loadData();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving trip:', error);
+      alert(`Fehler beim Speichern: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -130,6 +201,8 @@ function Trips() {
     setUseDropoffDestination(true);
     setEditingTrip(null);
     setShowForm(false);
+    setAvailableDriversList([]);
+    setAvailabilityMessage('');
   };
 
   const getDestinationName = (destinationId?: number) => {
@@ -167,17 +240,28 @@ function Trips() {
                 </option>
               ))}
             </select>
-            <select
-              value={formData.driver_id || ''}
-              onChange={(e) => setFormData({ ...formData, driver_id: e.target.value ? parseInt(e.target.value) : undefined })}
-            >
-              <option value="">Fahrer auswählen (Optional)</option>
-              {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>
-                  {driver.first_name} {driver.last_name}
-                </option>
-              ))}
-            </select>
+            <div>
+              <select
+                value={formData.driver_id || ''}
+                onChange={(e) => setFormData({ ...formData, driver_id: e.target.value ? parseInt(e.target.value) : undefined })}
+              >
+                <option value="">Fahrer auswählen (Optional)</option>
+                {availableDriversList.length > 0 ? (
+                  availableDriversList.map((driver) => (
+                    <option key={driver.driver_id} value={driver.driver_id}>
+                      {driver.first_name} {driver.last_name} - {driver.vehicle_type || 'Kein Fahrzeug'}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>Keine verfügbaren Fahrer</option>
+                )}
+              </select>
+              {availabilityMessage && (
+                <p className={`text-sm mt-1 ${availableDriversList.length > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  {availabilityMessage}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Pickup Location */}

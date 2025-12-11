@@ -69,3 +69,49 @@ export interface User {
   created_at?: Date;
   updated_at?: Date;
 }
+
+// Weekly recurring availability pattern (e.g., "every Monday 08:00-10:00")
+export interface DriverAvailabilityPattern {
+  id?: number;
+  driver_id: number;
+  weekday: number; // 1=Monday, 2=Tuesday, ..., 5=Friday
+  start_time: string; // TIME in format 'HH:MM:SS'
+  end_time: string;   // TIME in format 'HH:MM:SS'
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// Specific booking on a date (when a pattern is occupied by a trip)
+export interface DriverAvailabilityBooking {
+  id?: number;
+  driver_id: number;
+  date: Date;
+  start_time: string; // TIME in format 'HH:MM:SS'
+  end_time: string;   // TIME in format 'HH:MM:SS'
+  trip_id?: number;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// Helper type for the standard 2-hour blocks (Mo-Fr 08:00-18:00)
+export type TimeBlock = {
+  start: string;
+  end: string;
+  label: string;
+};
+
+export const STANDARD_TIME_BLOCKS: TimeBlock[] = [
+  { start: '08:00:00', end: '10:00:00', label: '08:00 - 10:00' },
+  { start: '10:00:00', end: '12:00:00', label: '10:00 - 12:00' },
+  { start: '12:00:00', end: '14:00:00', label: '12:00 - 14:00' },
+  { start: '14:00:00', end: '16:00:00', label: '14:00 - 16:00' },
+  { start: '16:00:00', end: '18:00:00', label: '16:00 - 18:00' }
+];
+
+export const WEEKDAYS = [
+  { value: 1, label: 'Montag', short: 'Mo' },
+  { value: 2, label: 'Dienstag', short: 'Di' },
+  { value: 3, label: 'Mittwoch', short: 'Mi' },
+  { value: 4, label: 'Donnerstag', short: 'Do' },
+  { value: 5, label: 'Freitag', short: 'Fr' }
+];
