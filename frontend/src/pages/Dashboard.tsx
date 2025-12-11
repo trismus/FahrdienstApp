@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react';
-import { tripAPI, patientAPI, driverAPI, type Trip } from '../services/api';
+import { patientAPI, driverAPI, tripAPI } from '../services/api';
 
 // MUI Components
 import {
+  Avatar,
   Box,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Container,
   Grid,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 
@@ -26,31 +20,39 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LoopIcon from '@mui/icons-material/Loop';
 
-const StatCard = ({ title, value, icon }: { title: string; value: string | number; icon: React.ReactNode }) => (
-  <Card sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
-    <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h5" component="div">
-        {value}
-      </Typography>
-      <Typography color="text.secondary">
-        {title}
-      </Typography>
-    </Box>
-    <Box sx={{ color: 'primary.main' }}>
-      {icon}
-    </Box>
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+}
+
+const StatCard = ({ title, value, icon, color }: StatCardProps) => (
+  <Card sx={{ backgroundColor: color, color: '#fff', borderRadius: 2 }}>
+    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box>
+        <Typography variant="h4" component="div" fontWeight="bold">
+          {value}
+        </Typography>
+        <Typography variant="subtitle1">
+          {title}
+        </Typography>
+      </Box>
+      <Avatar sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', width: 56, height: 56 }}>
+        {icon}
+      </Avatar>
+    </CardContent>
   </Card>
 );
 
-const getStatusChip = (status: string) => {
-    let color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" = "default";
-    if (status === 'scheduled') color = 'primary';
-    if (status === 'in_progress') color = 'warning';
-    if (status === 'completed') color = 'success';
-    if (status === 'cancelled') color = 'error';
-
-    return <Chip label={status} color={color} size="small" />;
-}
+const ChartPlaceholder = ({ title }: { title: string }) => (
+    <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+            <Typography>Chart data would be displayed here.</Typography>
+        </Box>
+    </Paper>
+);
 
 
 function Dashboard() {
@@ -60,7 +62,6 @@ function Dashboard() {
     scheduledTrips: 0,
     inProgressTrips: 0,
   });
-  const [upcomingTrips, setUpcomingTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,12 +83,6 @@ function Dashboard() {
         scheduledTrips: trips.filter((t) => t.status === 'scheduled').length,
         inProgressTrips: trips.filter((t) => t.status === 'in_progress').length,
       });
-
-      const upcoming = trips
-        .filter((t) => t.status === 'scheduled')
-        .sort((a, b) => new Date(a.pickup_time).getTime() - new Date(b.pickup_time).getTime())
-        .slice(0, 5);
-      setUpcomingTrips(upcoming);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -104,60 +99,34 @@ function Dashboard() {
   }
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" gutterBottom component="h1">
-        Dashboard
-      </Typography>
+    <Container maxWidth={false} sx={{ mt: -2 }}>
       <Grid container spacing={3}>
         {/* Stat Cards */}
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Total Patients" value={stats.totalPatients} icon={<PeopleIcon fontSize="large" />} />
+          <StatCard title="Total Patients" value={stats.totalPatients} icon={<PeopleIcon />} color="#5D87FF" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Total Drivers" value={stats.totalDrivers} icon={<LocalHospitalIcon fontSize="large" />} />
+          <StatCard title="Total Drivers" value={stats.totalDrivers} icon={<LocalHospitalIcon />} color="#49BEFF" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Scheduled Trips" value={stats.scheduledTrips} icon={<ScheduleIcon fontSize="large" />} />
+          <StatCard title="Scheduled Trips" value={stats.scheduledTrips} icon={<ScheduleIcon />} color="#FFAE1F" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="In Progress" value={stats.inProgressTrips} icon={<LoopIcon fontSize="large" />} />
+          <StatCard title="In Progress" value={stats.inProgressTrips} icon={<LoopIcon />} color="#FA896B" />
         </Grid>
 
-        {/* Upcoming Trips Table */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom component="h2">
-              Upcoming Trips
-            </Typography>
-            {upcomingTrips.length === 0 ? (
-              <Typography sx={{ p: 2 }}>No upcoming trips scheduled.</Typography>
-            ) : (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Patient</TableCell>
-                      <TableCell>Driver</TableCell>
-                      <TableCell>Pickup Time</TableCell>
-                      <TableCell>Pickup Address</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {upcomingTrips.map((trip) => (
-                      <TableRow key={trip.id}>
-                        <TableCell>{trip.patient_name}</TableCell>
-                        <TableCell>{trip.driver_name || 'Unassigned'}</TableCell>
-                        <TableCell>{new Date(trip.pickup_time).toLocaleString()}</TableCell>
-                        <TableCell>{trip.pickup_address}</TableCell>
-                        <TableCell>{getStatusChip(trip.status)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Paper>
+        {/* Chart Placeholders */}
+        <Grid item xs={12} lg={8}>
+            <ChartPlaceholder title="Revenue Updates" />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+            <ChartPlaceholder title="Yearly Breakup" />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+            <ChartPlaceholder title="Monthly Earnings" />
+        </Grid>
+         <Grid item xs={12} lg={8}>
+            <ChartPlaceholder title="Employee Salary" />
         </Grid>
       </Grid>
     </Container>
