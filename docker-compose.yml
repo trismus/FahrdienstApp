@@ -1,0 +1,83 @@
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:16-alpine
+    container_name: fahrdienst-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fahrdienst_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fahrdienst_secure_password_123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - fahrdienst-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fahrdienst-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: fahrdienst_db
+      DB_USER: postgres
+      DB_PASSWORD: fahrdienst_secure_password_123
+      JWT_SECRET: your_production_jwt_secret_change_this_in_production
+      JWT_EXPIRES_IN: 7d
+    ports:
+      - "5000:5000"
+    networks:
+      - fahrdienst-network
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api
+    container_name: fahrdienst-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - fahrdienst-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  fahrdienst-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
