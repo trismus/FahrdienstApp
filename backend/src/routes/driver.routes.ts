@@ -1,11 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../database/connection';
 import { Driver } from '../models/types';
+import { isOperator } from '../middleware/auth';
 
 const router = Router();
 
+// All driver routes require operator or admin role
+
 // Get all drivers
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', isOperator, async (req: Request, res: Response) => {
   try {
     const result = await query('SELECT * FROM drivers ORDER BY created_at DESC');
     res.json(result.rows);
@@ -16,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get available drivers
-router.get('/available', async (req: Request, res: Response) => {
+router.get('/available', isOperator, async (req: Request, res: Response) => {
   try {
     const result = await query('SELECT * FROM drivers WHERE is_available = true ORDER BY last_name');
     res.json(result.rows);
@@ -27,7 +30,7 @@ router.get('/available', async (req: Request, res: Response) => {
 });
 
 // Get driver by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query('SELECT * FROM drivers WHERE id = $1', [id]);
@@ -44,7 +47,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Create new driver
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', isOperator, async (req: Request, res: Response) => {
   try {
     const driver: Driver = req.body;
     const result = await query(
@@ -71,7 +74,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Update driver
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const driver: Driver = req.body;
@@ -108,7 +111,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete driver
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM drivers WHERE id = $1 RETURNING *', [id]);

@@ -1,11 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../database/connection';
 import { Destination } from '../models/types';
+import { isOperator } from '../middleware/auth';
 
 const router = Router();
 
+// All destination routes require operator or admin role
+
 // Get all destinations
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', isOperator, async (req: Request, res: Response) => {
   try {
     const result = await query('SELECT * FROM destinations ORDER BY name ASC');
     res.json(result.rows);
@@ -16,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get active destinations only
-router.get('/active', async (req: Request, res: Response) => {
+router.get('/active', isOperator, async (req: Request, res: Response) => {
   try {
     const result = await query('SELECT * FROM destinations WHERE is_active = true ORDER BY name ASC');
     res.json(result.rows);
@@ -27,7 +30,7 @@ router.get('/active', async (req: Request, res: Response) => {
 });
 
 // Get destinations by type
-router.get('/type/:type', async (req: Request, res: Response) => {
+router.get('/type/:type', isOperator, async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
     const result = await query(
@@ -42,7 +45,7 @@ router.get('/type/:type', async (req: Request, res: Response) => {
 });
 
 // Get destination by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query('SELECT * FROM destinations WHERE id = $1', [id]);
@@ -59,7 +62,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Create new destination
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', isOperator, async (req: Request, res: Response) => {
   try {
     const destination: Destination = req.body;
     const result = await query(
@@ -88,7 +91,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Update destination
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const destination: Destination = req.body;
@@ -128,7 +131,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete destination
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM destinations WHERE id = $1 RETURNING *', [id]);

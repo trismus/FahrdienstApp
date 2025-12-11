@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { isOperator } from '../middleware/auth';
 import { query } from '../database/connection';
 import { DriverAvailabilityPattern, DriverAvailabilityBooking } from '../models/types';
 
@@ -7,7 +8,7 @@ const router = Router();
 // ==================== PATTERNS (Recurring Weekly Availability) ====================
 
 // Get all patterns for a specific driver
-router.get('/patterns/driver/:driverId', async (req: Request, res: Response) => {
+router.get('/patterns/driver/:driverId', isOperator, async (req: Request, res: Response) => {
   try {
     const { driverId } = req.params;
     const result = await query(
@@ -22,7 +23,7 @@ router.get('/patterns/driver/:driverId', async (req: Request, res: Response) => 
 });
 
 // Create new availability pattern(s)
-router.post('/patterns', async (req: Request, res: Response) => {
+router.post('/patterns', isOperator, async (req: Request, res: Response) => {
   try {
     const patterns: DriverAvailabilityPattern[] = Array.isArray(req.body) ? req.body : [req.body];
     const results = [];
@@ -49,7 +50,7 @@ router.post('/patterns', async (req: Request, res: Response) => {
 });
 
 // Delete availability pattern
-router.delete('/patterns/:id', async (req: Request, res: Response) => {
+router.delete('/patterns/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(
@@ -69,7 +70,7 @@ router.delete('/patterns/:id', async (req: Request, res: Response) => {
 });
 
 // Bulk delete patterns for a driver
-router.delete('/patterns/driver/:driverId', async (req: Request, res: Response) => {
+router.delete('/patterns/driver/:driverId', isOperator, async (req: Request, res: Response) => {
   try {
     const { driverId } = req.params;
     const result = await query(
@@ -89,7 +90,7 @@ router.delete('/patterns/driver/:driverId', async (req: Request, res: Response) 
 // ==================== BOOKINGS (Specific Date Bookings) ====================
 
 // Get bookings for a specific driver and date range
-router.get('/bookings/driver/:driverId', async (req: Request, res: Response) => {
+router.get('/bookings/driver/:driverId', isOperator, async (req: Request, res: Response) => {
   try {
     const { driverId } = req.params;
     const { startDate, endDate } = req.query;
@@ -113,7 +114,7 @@ router.get('/bookings/driver/:driverId', async (req: Request, res: Response) => 
 });
 
 // Get bookings for a specific date (all drivers)
-router.get('/bookings/date/:date', async (req: Request, res: Response) => {
+router.get('/bookings/date/:date', isOperator, async (req: Request, res: Response) => {
   try {
     const { date } = req.params;
     const result = await query(
@@ -135,7 +136,7 @@ router.get('/bookings/date/:date', async (req: Request, res: Response) => {
 
 // Get available drivers for a specific date and time
 // This checks patterns and excludes drivers with bookings at that time
-router.get('/available', async (req: Request, res: Response) => {
+router.get('/available', isOperator, async (req: Request, res: Response) => {
   try {
     const { date, startTime, endTime } = req.query;
 
@@ -192,7 +193,7 @@ router.get('/available', async (req: Request, res: Response) => {
 // ==================== BOOKING MANAGEMENT ====================
 
 // Create a booking (occupy a time slot for a trip)
-router.post('/bookings', async (req: Request, res: Response) => {
+router.post('/bookings', isOperator, async (req: Request, res: Response) => {
   try {
     const booking: DriverAvailabilityBooking = req.body;
 
@@ -236,7 +237,7 @@ router.post('/bookings', async (req: Request, res: Response) => {
 });
 
 // Delete a booking (free up a time slot)
-router.delete('/bookings/:id', async (req: Request, res: Response) => {
+router.delete('/bookings/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(
@@ -256,7 +257,7 @@ router.delete('/bookings/:id', async (req: Request, res: Response) => {
 });
 
 // Delete booking by trip ID (when trip is deleted)
-router.delete('/bookings/trip/:tripId', async (req: Request, res: Response) => {
+router.delete('/bookings/trip/:tripId', isOperator, async (req: Request, res: Response) => {
   try {
     const { tripId } = req.params;
     const result = await query(

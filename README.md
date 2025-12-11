@@ -39,6 +39,17 @@ A full-stack web application for medical transport coordination system. This app
 
 ## Features
 
+### Authentication & User Management
+- **Session-Based Authentication**: Secure login system with PostgreSQL session storage
+- **Role-Based Access Control (RBAC)**: Three user roles with different permissions
+  - **Administrator**: Full system access + user management
+  - **Operator (Dispatcher)**: Trip planning, patient/driver/destination management
+  - **Driver**: View and manage their own assigned trips
+- **User Management**: Admin-only interface to create, edit, and delete users
+- **Driver User Accounts**: Link user accounts to driver records for trip access
+- **Secure Password Storage**: bcrypt password hashing with salt rounds
+- **Session Persistence**: 24-hour session validity with automatic logout
+
 ### Core Functionality
 - **Dashboard**: Real-time overview with statistics and upcoming trips
 - **Patient Management**: Complete CRUD operations for patient records
@@ -67,6 +78,9 @@ A full-stack web application for medical transport coordination system. This app
 - **Status Tracking**: Real-time trip status updates
   - Scheduled → In Progress → Completed/Cancelled
   - Quick status change from the trips list
+- **My Trips (Driver View)**: Drivers can view their assigned trips and update trip status
+  - Filter by status (scheduled, in progress, completed)
+  - Start trip and complete trip actions
 
 ### Technical Features
 - **Responsive UI**: Clean, mobile-friendly interface
@@ -75,7 +89,9 @@ A full-stack web application for medical transport coordination system. This app
 - **Docker Ready**: One-command deployment with docker-compose
 - **Health Monitoring**: Built-in health checks for all services
 - **Data Persistence**: PostgreSQL with volume-backed storage
-- **Security**: JWT authentication ready, CORS configured
+- **Security**: Session-based authentication, bcrypt password hashing, CORS configured
+- **Protected Routes**: Frontend route guards based on user roles
+- **Automatic Session Management**: Automatic logout on session expiration
 
 ## Architecture
 
@@ -147,6 +163,16 @@ That's it! The application is now running at:
 - **Backend API**: http://localhost:5000
 - **Database**: localhost:5432
 
+### First Login
+
+Open your browser and navigate to http://localhost
+
+**Default Administrator Credentials:**
+- Username: `admin`
+- Password: `admin123`
+
+⚠️ **Important**: Change the admin password immediately after first login in production environments!
+
 ### Verify Installation
 
 Test the backend API:
@@ -171,8 +197,9 @@ curl -I http://localhost/
 ### Docker Configuration
 
 #### Default Credentials (Change in Production!)
-- Database Password: `fahrdienst_secure_password_123`
-- JWT Secret: `your_production_jwt_secret_change_this_in_production`
+- **Admin User**: username `admin` / password `admin123`
+- **Database Password**: `fahrdienst_secure_password_123`
+- **Session Secret**: `your_session_secret_change_in_production_12345`
 
 #### Customizing Environment Variables
 1. Copy the example file: `cp .env.docker .env`
@@ -316,6 +343,23 @@ The frontend will be running at `http://localhost:5173`
 
 ## API Endpoints
 
+### Authentication
+- `POST /api/auth/login` - User login (returns session cookie)
+- `POST /api/auth/logout` - User logout (destroys session)
+- `GET /api/auth/me` - Get current logged-in user info
+
+### Users (Admin Only)
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users` - Create new user (password auto-hashed)
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+- `PATCH /api/users/:id/password` - Change user password
+
+### Driver Trips (Driver Only)
+- `GET /api/driver-trips/my-trips` - Get trips for logged-in driver (supports `?status=` filter)
+- `PATCH /api/driver-trips/:id/status` - Update trip status (scheduled → in_progress → completed)
+
 ### Patients
 - `GET /api/patients` - Get all patients
 - `GET /api/patients/:id` - Get patient by ID
@@ -417,22 +461,35 @@ npm run build
 FahrdienstApp/
 ├── backend/
 │   ├── src/
+│   │   ├── config/
+│   │   │   └── session.ts          # Session configuration
 │   │   ├── database/
 │   │   │   ├── connection.ts
 │   │   │   ├── schema.sql
 │   │   │   └── migrations/
 │   │   │       ├── 001_add_destinations.sql
 │   │   │       ├── 002_convert_to_weekly_patterns.sql
-│   │   │       └── 003_add_appointments_and_recurring_trips.sql
+│   │   │       ├── 003_add_appointments_and_recurring_trips.sql
+│   │   │       ├── 004_add_trips_destinations.sql
+│   │   │       └── 005_add_user_driver_link.sql  # Auth system
+│   │   ├── middleware/
+│   │   │   └── auth.ts             # Authentication middleware
 │   │   ├── models/
 │   │   │   └── types.ts
 │   │   ├── routes/
+│   │   │   ├── auth.routes.ts      # Login/logout/me
+│   │   │   ├── user.routes.ts      # User management
+│   │   │   ├── driver-trips.routes.ts  # Driver trip access
 │   │   │   ├── patient.routes.ts
 │   │   │   ├── driver.routes.ts
 │   │   │   ├── destination.routes.ts
 │   │   │   ├── trip.routes.ts
 │   │   │   ├── recurring-trip.routes.ts
 │   │   │   └── availability.routes.ts
+│   │   ├── scripts/
+│   │   │   └── create-admin.ts     # Admin user creation script
+│   │   ├── types/
+│   │   │   └── connect-pg-simple.d.ts  # Type definitions
 │   │   └── server.ts
 │   ├── Dockerfile
 │   ├── .dockerignore
@@ -441,15 +498,23 @@ FahrdienstApp/
 │   └── .env.example
 ├── frontend/
 │   ├── src/
+│   │   ├── components/
+│   │   │   └── ProtectedRoute.tsx  # Route guards
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx     # Global auth state
 │   │   ├── pages/
+│   │   │   ├── Login.tsx           # Login page
+│   │   │   ├── Users.tsx           # User management (admin)
+│   │   │   ├── MyTrips.tsx         # Driver trip view
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── Patients.tsx
 │   │   │   ├── Drivers.tsx
 │   │   │   ├── Destinations.tsx
 │   │   │   ├── Trips.tsx
+│   │   │   ├── RecurringTrips.tsx
 │   │   │   └── DriverAvailability.tsx
 │   │   ├── services/
-│   │   │   └── api.ts
+│   │   │   └── api.ts              # API client with auth
 │   │   ├── App.tsx
 │   │   ├── App.css
 │   │   └── main.tsx
@@ -550,14 +615,17 @@ cd ../frontend && npm install
 
 #### Security Checklist
 Before deploying to production:
+- [ ] Change admin password from default `admin123`
 - [ ] Change `POSTGRES_PASSWORD` in docker-compose.yml
-- [ ] Change `JWT_SECRET` in docker-compose.yml
+- [ ] Change `SESSION_SECRET` in docker-compose.yml
+- [ ] Set `NODE_ENV=production` for HTTPS-only cookies
 - [ ] Update `VITE_API_URL` to your production domain
 - [ ] Set up HTTPS/SSL certificates
 - [ ] Configure firewall rules
 - [ ] Set up automated backups for PostgreSQL
 - [ ] Review and update CORS settings in backend
 - [ ] Enable production logging
+- [ ] Review user permissions and roles
 
 #### Performance Optimization
 - Consider using a reverse proxy (nginx/Traefik) in front of services
@@ -623,10 +691,12 @@ SELECT * FROM drivers WHERE is_available = true;
 
 ### Default Service URLs
 - **Frontend Application**: http://localhost
+- **Login Page**: http://localhost (redirects if not authenticated)
 - **Backend API Health**: http://localhost:5000/api/health
-- **List all Patients**: http://localhost:5000/api/patients
-- **List all Drivers**: http://localhost:5000/api/drivers
-- **List all Trips**: http://localhost:5000/api/trips
+- **Login**: `POST http://localhost:5000/api/auth/login`
+- **List all Patients**: http://localhost:5000/api/patients (requires authentication)
+- **List all Drivers**: http://localhost:5000/api/drivers (requires authentication)
+- **List all Trips**: http://localhost:5000/api/trips (requires authentication)
 
 ## License
 

@@ -7,7 +7,19 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important for session cookies!
 });
+
+// Response interceptor for 401 -> redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface Patient {
   id?: number;
@@ -282,6 +294,45 @@ export const availabilityAPI = {
   // Availability check (combined patterns + bookings)
   getAvailable: (date: string, startTime: string, endTime: string) =>
     api.get<AvailableDriver[]>(`/availability/available?date=${date}&startTime=${startTime}&endTime=${endTime}`),
+};
+
+// User interface (for authentication)
+export interface User {
+  id?: number;
+  username: string;
+  email: string;
+  password?: string; // Only for create, not returned
+  role: 'admin' | 'dispatcher' | 'driver';
+  driver_id?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Auth API
+export const authAPI = {
+  login: (username: string, password: string) =>
+    api.post<User>('/auth/login', { username, password }),
+  logout: () => api.post('/auth/logout'),
+  me: () => api.get<User>('/auth/me'),
+};
+
+// User API (Admin only)
+export const userAPI = {
+  getAll: () => api.get<User[]>('/users'),
+  getById: (id: number) => api.get<User>(`/users/${id}`),
+  create: (user: User) => api.post<User>('/users', user),
+  update: (id: number, user: User) => api.put<User>(`/users/${id}`, user),
+  delete: (id: number) => api.delete(`/users/${id}`),
+  changePassword: (id: number, password: string) =>
+    api.patch(`/users/${id}/password`, { password }),
+};
+
+// Driver Trip API (Driver role)
+export const driverTripAPI = {
+  getMyTrips: (status?: string) =>
+    api.get<Trip[]>(`/driver-trips/my-trips${status ? `?status=${status}` : ''}`),
+  updateStatus: (id: number, status: string) =>
+    api.patch<Trip>(`/driver-trips/${id}/status`, { status }),
 };
 
 export default api;

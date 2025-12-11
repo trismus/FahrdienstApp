@@ -27,4 +27,7 @@ export const query = async (text: string, params?: any[]) => {
   return res;
 };
 
+// Export pool for session storage
+export { pool };
+
 export default pool;

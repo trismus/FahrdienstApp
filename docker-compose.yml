@@ -29,7 +29,7 @@ services:
     container_name: fahrdienst-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 5000
       DB_HOST: database
       DB_PORT: 5432
@@ -38,6 +38,7 @@ services:
       DB_PASSWORD: fahrdienst_secure_password_123
       JWT_SECRET: your_production_jwt_secret_change_this_in_production
       JWT_EXPIRES_IN: 7d
+      SESSION_SECRET: your_session_secret_change_in_production_12345
     ports:
       - "5000:5000"
     networks:

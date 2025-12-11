@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { isOperator } from '../middleware/auth';
 import { query } from '../database/connection';
 import { RecurringTrip } from '../models/types';
 
 const router = Router();
 
 // Get all recurring trips
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', isOperator, async (_req: Request, res: Response) => {
   try {
     const result = await query(
       `SELECT rt.*,
@@ -30,7 +31,7 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // Get recurring trips by patient
-router.get('/patient/:patientId', async (req: Request, res: Response) => {
+router.get('/patient/:patientId', isOperator, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     const result = await query(
@@ -58,7 +59,7 @@ router.get('/patient/:patientId', async (req: Request, res: Response) => {
 });
 
 // Get a single recurring trip by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(
@@ -90,7 +91,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Create a new recurring trip
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', isOperator, async (req: Request, res: Response) => {
   try {
     const recurringTrip: RecurringTrip = req.body;
 
@@ -157,7 +158,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Update a recurring trip
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const recurringTrip: RecurringTrip = req.body;
@@ -224,7 +225,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete a recurring trip
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(
@@ -244,7 +245,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // Deactivate a recurring trip (soft delete)
-router.patch('/:id/deactivate', async (req: Request, res: Response) => {
+router.patch('/:id/deactivate', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(
@@ -265,7 +266,7 @@ router.patch('/:id/deactivate', async (req: Request, res: Response) => {
 });
 
 // Generate trip instances from a recurring trip
-router.post('/:id/generate', async (req: Request, res: Response) => {
+router.post('/:id/generate', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { generateUntil } = req.body; // Optional: date to generate until
@@ -289,7 +290,7 @@ router.post('/:id/generate', async (req: Request, res: Response) => {
 });
 
 // Get all trip instances for a recurring trip
-router.get('/:id/trips', async (req: Request, res: Response) => {
+router.get('/:id/trips', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(

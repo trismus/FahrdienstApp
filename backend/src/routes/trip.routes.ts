@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { isOperator } from '../middleware/auth';
 import { query } from '../database/connection';
 import { Trip } from '../models/types';
 
 const router = Router();
 
 // Get all trips
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', isOperator, async (req: Request, res: Response) => {
   try {
     const result = await query(`
       SELECT t.*,
@@ -34,7 +35,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get trips by status
-router.get('/status/:status', async (req: Request, res: Response) => {
+router.get('/status/:status', isOperator, async (req: Request, res: Response) => {
   try {
     const { status } = req.params;
     const result = await query(`
@@ -65,7 +66,7 @@ router.get('/status/:status', async (req: Request, res: Response) => {
 });
 
 // Get trip by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query(`
@@ -100,7 +101,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Create new trip
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', isOperator, async (req: Request, res: Response) => {
   try {
     const trip: Trip = req.body;
     const result = await query(
@@ -145,7 +146,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Update trip
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const trip: Trip = req.body;
@@ -198,7 +199,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Update trip status
-router.patch('/:id/status', async (req: Request, res: Response) => {
+router.patch('/:id/status', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -223,7 +224,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 });
 
 // Delete trip
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', isOperator, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM trips WHERE id = $1 RETURNING *', [id]);

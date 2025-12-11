@@ -124,8 +124,9 @@ export interface User {
   id?: number;
   username: string;
   email: string;
-  password_hash: string;
+  password_hash?: string; // Only for DB, not exposed in API responses
   role?: 'admin' | 'dispatcher' | 'driver';
+  driver_id?: number; // FK to drivers table, required for role='driver'
   created_at?: Date;
   updated_at?: Date;
 }
