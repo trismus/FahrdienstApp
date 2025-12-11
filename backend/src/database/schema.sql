@@ -48,26 +48,86 @@ CREATE TABLE IF NOT EXISTS destinations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trips table
+-- Recurring trips table (for series like "every Monday and Friday for 4 weeks")
+CREATE TABLE IF NOT EXISTS recurring_trips (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Pattern configuration
+    recurrence_pattern VARCHAR(20) NOT NULL CHECK (recurrence_pattern IN ('weekly', 'biweekly', 'monthly')),
+    weekdays INTEGER[] NOT NULL, -- Array of weekdays: 1=Monday, 2=Tuesday, ..., 7=Sunday
+    start_date DATE NOT NULL,
+    end_date DATE, -- NULL means indefinite
+    occurrences INTEGER, -- Alternative to end_date: "repeat 10 times"
+
+    -- Trip template (will be copied to each instance)
+    pickup_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    pickup_address TEXT,
+    pickup_time_of_day TIME NOT NULL, -- Time of day (e.g., 08:30)
+
+    appointment_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    appointment_address TEXT,
+    appointment_time_offset INTERVAL, -- Offset from pickup (e.g., '+1 hour')
+
+    dropoff_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    dropoff_address TEXT,
+
+    -- Optional return trip
+    has_return BOOLEAN DEFAULT false,
+    return_pickup_time_offset INTERVAL, -- Offset from appointment (e.g., '+2 hours')
+    return_pickup_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    return_pickup_address TEXT,
+
+    -- Metadata
+    notes TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_pickup_location_recurring CHECK (pickup_destination_id IS NOT NULL OR pickup_address IS NOT NULL),
+    CONSTRAINT check_appointment_location CHECK (appointment_destination_id IS NOT NULL OR appointment_address IS NOT NULL),
+    CONSTRAINT check_end_condition CHECK (end_date IS NOT NULL OR occurrences IS NOT NULL),
+    CONSTRAINT check_weekdays_not_empty CHECK (array_length(weekdays, 1) > 0)
+);
+
+-- Trips table (now with appointment times and recurring trip support)
 CREATE TABLE IF NOT EXISTS trips (
     id SERIAL PRIMARY KEY,
     patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
     driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+    recurring_trip_id INTEGER REFERENCES recurring_trips(id) ON DELETE SET NULL,
+
+    -- Initial pickup (to destination)
     pickup_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
     pickup_address TEXT,
     pickup_time TIMESTAMP NOT NULL,
+
+    -- Appointment at destination
+    appointment_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    appointment_address TEXT,
+    appointment_time TIMESTAMP,
+
+    -- Final dropoff (after appointment)
     dropoff_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
     dropoff_address TEXT,
     dropoff_time TIMESTAMP,
+
+    -- Optional return pickup (separate return trip)
+    return_pickup_time TIMESTAMP,
+    return_pickup_destination_id INTEGER REFERENCES destinations(id) ON DELETE SET NULL,
+    return_pickup_address TEXT,
+    return_driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+
+    -- Metadata
     distance_km DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled')),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     -- Ensure at least one pickup location is specified
-    CONSTRAINT check_pickup_location CHECK (pickup_destination_id IS NOT NULL OR pickup_address IS NOT NULL),
-    -- Ensure at least one dropoff location is specified
-    CONSTRAINT check_dropoff_location CHECK (dropoff_destination_id IS NOT NULL OR dropoff_address IS NOT NULL)
+    CONSTRAINT check_pickup_location CHECK (pickup_destination_id IS NOT NULL OR pickup_address IS NOT NULL)
 );
 
 -- Users table (for authentication)
@@ -117,10 +177,16 @@ CREATE TABLE IF NOT EXISTS driver_availability_bookings (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_trips_patient_id ON trips(patient_id);
 CREATE INDEX IF NOT EXISTS idx_trips_driver_id ON trips(driver_id);
+CREATE INDEX IF NOT EXISTS idx_trips_recurring_trip ON trips(recurring_trip_id);
 CREATE INDEX IF NOT EXISTS idx_trips_pickup_destination_id ON trips(pickup_destination_id);
 CREATE INDEX IF NOT EXISTS idx_trips_dropoff_destination_id ON trips(dropoff_destination_id);
 CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status);
 CREATE INDEX IF NOT EXISTS idx_trips_pickup_time ON trips(pickup_time);
+CREATE INDEX IF NOT EXISTS idx_trips_appointment_time ON trips(appointment_time);
+CREATE INDEX IF NOT EXISTS idx_trips_return_pickup_time ON trips(return_pickup_time);
+CREATE INDEX IF NOT EXISTS idx_recurring_trips_patient ON recurring_trips(patient_id);
+CREATE INDEX IF NOT EXISTS idx_recurring_trips_active ON recurring_trips(is_active);
+CREATE INDEX IF NOT EXISTS idx_recurring_trips_dates ON recurring_trips(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_drivers_available ON drivers(is_available);
 CREATE INDEX IF NOT EXISTS idx_destinations_type ON destinations(type);
 CREATE INDEX IF NOT EXISTS idx_destinations_active ON destinations(is_active);

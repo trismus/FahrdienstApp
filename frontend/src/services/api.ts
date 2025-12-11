@@ -52,19 +52,83 @@ export interface Trip {
   id?: number;
   patient_id: number;
   driver_id?: number;
+  recurring_trip_id?: number;
+
+  // Initial pickup (to destination)
   pickup_destination_id?: number;
   pickup_address?: string;
   pickup_time: string;
+
+  // Appointment at destination
+  appointment_destination_id?: number;
+  appointment_address?: string;
+  appointment_time?: string;
+
+  // Final dropoff (after appointment)
   dropoff_destination_id?: number;
   dropoff_address?: string;
   dropoff_time?: string;
+
+  // Optional return pickup (separate return trip)
+  return_pickup_time?: string;
+  return_pickup_destination_id?: number;
+  return_pickup_address?: string;
+  return_driver_id?: number;
+
+  // Metadata
   distance_km?: number;
   status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   notes?: string;
+
+  // Computed fields from joins
   patient_name?: string;
   driver_name?: string;
+  return_driver_name?: string;
   pickup_destination_name?: string;
+  appointment_destination_name?: string;
   dropoff_destination_name?: string;
+  return_pickup_destination_name?: string;
+}
+
+export interface RecurringTrip {
+  id?: number;
+  patient_id: number;
+
+  // Pattern configuration
+  recurrence_pattern: 'weekly' | 'biweekly' | 'monthly';
+  weekdays: number[]; // 1=Monday, 2=Tuesday, ..., 7=Sunday
+  start_date: string;
+  end_date?: string; // NULL means indefinite
+  occurrences?: number; // Alternative to end_date
+
+  // Trip template
+  pickup_destination_id?: number;
+  pickup_address?: string;
+  pickup_time_of_day: string; // TIME format 'HH:MM:SS'
+
+  appointment_destination_id?: number;
+  appointment_address?: string;
+  appointment_time_offset?: string; // INTERVAL format (e.g., '1 hour')
+
+  dropoff_destination_id?: number;
+  dropoff_address?: string;
+
+  // Optional return trip
+  has_return?: boolean;
+  return_pickup_time_offset?: string; // INTERVAL format
+  return_pickup_destination_id?: number;
+  return_pickup_address?: string;
+
+  // Metadata
+  notes?: string;
+  is_active?: boolean;
+
+  // Computed fields from joins
+  patient_name?: string;
+  pickup_destination_name?: string;
+  appointment_destination_name?: string;
+  dropoff_destination_name?: string;
+  return_pickup_destination_name?: string;
 }
 
 // Weekly recurring availability pattern (e.g., "every Monday 08:00-10:00")
@@ -163,6 +227,20 @@ export const tripAPI = {
   update: (id: number, trip: Trip) => api.put<Trip>(`/trips/${id}`, trip),
   updateStatus: (id: number, status: string) => api.patch<Trip>(`/trips/${id}/status`, { status }),
   delete: (id: number) => api.delete(`/trips/${id}`),
+};
+
+// Recurring Trip API
+export const recurringTripAPI = {
+  getAll: () => api.get<RecurringTrip[]>('/recurring-trips'),
+  getByPatient: (patientId: number) => api.get<RecurringTrip[]>(`/recurring-trips/patient/${patientId}`),
+  getById: (id: number) => api.get<RecurringTrip>(`/recurring-trips/${id}`),
+  create: (recurringTrip: RecurringTrip) => api.post<RecurringTrip>('/recurring-trips', recurringTrip),
+  update: (id: number, recurringTrip: RecurringTrip) => api.put<RecurringTrip>(`/recurring-trips/${id}`, recurringTrip),
+  delete: (id: number) => api.delete(`/recurring-trips/${id}`),
+  deactivate: (id: number) => api.patch<RecurringTrip>(`/recurring-trips/${id}/deactivate`, {}),
+  generate: (id: number, generateUntil?: string) =>
+    api.post<{ message: string; instances_created: number }>(`/recurring-trips/${id}/generate`, { generateUntil }),
+  getTrips: (id: number) => api.get<Trip[]>(`/recurring-trips/${id}/trips`),
 };
 
 // Availability API

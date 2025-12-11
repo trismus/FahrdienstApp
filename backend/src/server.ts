@@ -6,6 +6,7 @@ import patientRoutes from './routes/patient.routes';
 import driverRoutes from './routes/driver.routes';
 import destinationRoutes from './routes/destination.routes';
 import tripRoutes from './routes/trip.routes';
+import recurringTripRoutes from './routes/recurring-trip.routes';
 import availabilityRoutes from './routes/availability.routes';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/destinations', destinationRoutes);
 app.use('/api/trips', tripRoutes);
+app.use('/api/recurring-trips', recurringTripRoutes);
 app.use('/api/availability', availabilityRoutes);
 
 // Error handling middleware

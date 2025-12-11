@@ -10,7 +10,10 @@ function Trips() {
   const [showForm, setShowForm] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [usePickupDestination, setUsePickupDestination] = useState(true);
+  const [useAppointmentDestination, setUseAppointmentDestination] = useState(true);
   const [useDropoffDestination, setUseDropoffDestination] = useState(true);
+  const [useReturnPickupDestination, setUseReturnPickupDestination] = useState(true);
+  const [hasReturn, setHasReturn] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState<string>('');
   const [formData, setFormData] = useState<Trip>({
     patient_id: 0,
@@ -18,9 +21,16 @@ function Trips() {
     pickup_destination_id: undefined,
     pickup_address: '',
     pickup_time: '',
+    appointment_destination_id: undefined,
+    appointment_address: '',
+    appointment_time: '',
     dropoff_destination_id: undefined,
     dropoff_address: '',
     dropoff_time: '',
+    return_pickup_time: '',
+    return_pickup_destination_id: undefined,
+    return_pickup_address: '',
+    return_driver_id: undefined,
     distance_km: undefined,
     status: 'scheduled',
     notes: '',
@@ -90,8 +100,14 @@ function Trips() {
         ...formData,
         pickup_destination_id: usePickupDestination ? formData.pickup_destination_id : undefined,
         pickup_address: usePickupDestination ? undefined : formData.pickup_address,
+        appointment_destination_id: useAppointmentDestination ? formData.appointment_destination_id : undefined,
+        appointment_address: useAppointmentDestination ? undefined : formData.appointment_address,
         dropoff_destination_id: useDropoffDestination ? formData.dropoff_destination_id : undefined,
         dropoff_address: useDropoffDestination ? undefined : formData.dropoff_address,
+        return_pickup_time: hasReturn ? formData.return_pickup_time : undefined,
+        return_pickup_destination_id: hasReturn && useReturnPickupDestination ? formData.return_pickup_destination_id : undefined,
+        return_pickup_address: hasReturn && !useReturnPickupDestination ? formData.return_pickup_address : undefined,
+        return_driver_id: hasReturn ? formData.return_driver_id : undefined,
       };
 
       // Validate driver availability if a driver is selected
@@ -146,16 +162,26 @@ function Trips() {
   const handleEdit = (trip: Trip) => {
     setEditingTrip(trip);
     setUsePickupDestination(!!trip.pickup_destination_id);
+    setUseAppointmentDestination(!!trip.appointment_destination_id);
     setUseDropoffDestination(!!trip.dropoff_destination_id);
+    setUseReturnPickupDestination(!!trip.return_pickup_destination_id);
+    setHasReturn(!!trip.return_pickup_time);
     setFormData({
       patient_id: trip.patient_id,
       driver_id: trip.driver_id,
       pickup_destination_id: trip.pickup_destination_id,
       pickup_address: trip.pickup_address || '',
       pickup_time: trip.pickup_time.slice(0, 16),
+      appointment_destination_id: trip.appointment_destination_id,
+      appointment_address: trip.appointment_address || '',
+      appointment_time: trip.appointment_time ? trip.appointment_time.slice(0, 16) : '',
       dropoff_destination_id: trip.dropoff_destination_id,
       dropoff_address: trip.dropoff_address || '',
       dropoff_time: trip.dropoff_time ? trip.dropoff_time.slice(0, 16) : '',
+      return_pickup_time: trip.return_pickup_time ? trip.return_pickup_time.slice(0, 16) : '',
+      return_pickup_destination_id: trip.return_pickup_destination_id,
+      return_pickup_address: trip.return_pickup_address || '',
+      return_driver_id: trip.return_driver_id,
       distance_km: trip.distance_km,
       status: trip.status,
       notes: trip.notes,
@@ -190,15 +216,25 @@ function Trips() {
       pickup_destination_id: undefined,
       pickup_address: '',
       pickup_time: '',
+      appointment_destination_id: undefined,
+      appointment_address: '',
+      appointment_time: '',
       dropoff_destination_id: undefined,
       dropoff_address: '',
       dropoff_time: '',
+      return_pickup_time: '',
+      return_pickup_destination_id: undefined,
+      return_pickup_address: '',
+      return_driver_id: undefined,
       distance_km: undefined,
       status: 'scheduled',
       notes: '',
     });
     setUsePickupDestination(true);
+    setUseAppointmentDestination(true);
     setUseDropoffDestination(true);
+    setUseReturnPickupDestination(true);
+    setHasReturn(false);
     setEditingTrip(null);
     setShowForm(false);
     setAvailableDriversList([]);
@@ -310,9 +346,54 @@ function Trips() {
             </div>
           </div>
 
+          {/* Appointment Location */}
+          <div className="location-section">
+            <h4>Termin</h4>
+            <div className="form-grid">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={useAppointmentDestination}
+                  onChange={(e) => setUseAppointmentDestination(e.target.checked)}
+                />
+                Gespeichertes Ziel verwenden
+              </label>
+            </div>
+            <div className="form-grid">
+              {useAppointmentDestination ? (
+                <select
+                  value={formData.appointment_destination_id || ''}
+                  onChange={(e) => setFormData({ ...formData, appointment_destination_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                  required={useAppointmentDestination}
+                >
+                  <option value="">Terminort (Ziel) auswählen *</option>
+                  {destinations.map((dest) => (
+                    <option key={dest.id} value={dest.id}>
+                      {dest.name} - {dest.address}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Terminadresse *"
+                  value={formData.appointment_address}
+                  onChange={(e) => setFormData({ ...formData, appointment_address: e.target.value })}
+                  required={!useAppointmentDestination}
+                />
+              )}
+              <input
+                type="datetime-local"
+                placeholder="Terminzeit"
+                value={formData.appointment_time}
+                onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
+              />
+            </div>
+          </div>
+
           {/* Dropoff Location */}
           <div className="location-section">
-            <h4>Zielort</h4>
+            <h4>Rückfahrt nach Termin</h4>
             <div className="form-grid">
               <label className="checkbox-label">
                 <input
@@ -353,6 +434,77 @@ function Trips() {
                 onChange={(e) => setFormData({ ...formData, dropoff_time: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Optional Return Pickup */}
+          <div className="location-section">
+            <div className="form-grid">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={hasReturn}
+                  onChange={(e) => setHasReturn(e.target.checked)}
+                />
+                <strong>Rückfahrt nach Termin (optional)</strong>
+              </label>
+            </div>
+
+            {hasReturn && (
+              <>
+                <h4>Abholung für Rückfahrt</h4>
+                <div className="form-grid">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={useReturnPickupDestination}
+                      onChange={(e) => setUseReturnPickupDestination(e.target.checked)}
+                    />
+                    Gespeichertes Ziel verwenden
+                  </label>
+                </div>
+                <div className="form-grid">
+                  {useReturnPickupDestination ? (
+                    <select
+                      value={formData.return_pickup_destination_id || ''}
+                      onChange={(e) => setFormData({ ...formData, return_pickup_destination_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                    >
+                      <option value="">Abholort für Rückfahrt auswählen</option>
+                      {destinations.map((dest) => (
+                        <option key={dest.id} value={dest.id}>
+                          {dest.name} - {dest.address}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Abholadresse für Rückfahrt"
+                      value={formData.return_pickup_address}
+                      onChange={(e) => setFormData({ ...formData, return_pickup_address: e.target.value })}
+                    />
+                  )}
+                  <input
+                    type="datetime-local"
+                    placeholder="Abholzeit für Rückfahrt"
+                    value={formData.return_pickup_time}
+                    onChange={(e) => setFormData({ ...formData, return_pickup_time: e.target.value })}
+                  />
+                </div>
+                <div className="form-grid">
+                  <select
+                    value={formData.return_driver_id || ''}
+                    onChange={(e) => setFormData({ ...formData, return_driver_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                  >
+                    <option value="">Fahrer für Rückfahrt (Optional)</option>
+                    {availableDriversList.map((driver) => (
+                      <option key={driver.driver_id} value={driver.driver_id}>
+                        {driver.first_name} {driver.last_name} - {driver.vehicle_type || 'Kein Fahrzeug'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="form-grid">

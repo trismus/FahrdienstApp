@@ -47,15 +47,69 @@ export interface Trip {
   id?: number;
   patient_id: number;
   driver_id?: number;
+  recurring_trip_id?: number;
+
+  // Initial pickup (to destination)
   pickup_destination_id?: number;
   pickup_address?: string;
   pickup_time: Date;
+
+  // Appointment at destination
+  appointment_destination_id?: number;
+  appointment_address?: string;
+  appointment_time?: Date;
+
+  // Final dropoff (after appointment)
   dropoff_destination_id?: number;
   dropoff_address?: string;
   dropoff_time?: Date;
+
+  // Optional return pickup (separate return trip)
+  return_pickup_time?: Date;
+  return_pickup_destination_id?: number;
+  return_pickup_address?: string;
+  return_driver_id?: number;
+
+  // Metadata
   distance_km?: number;
   status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   notes?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface RecurringTrip {
+  id?: number;
+  patient_id: number;
+
+  // Pattern configuration
+  recurrence_pattern: 'weekly' | 'biweekly' | 'monthly';
+  weekdays: number[]; // 1=Monday, 2=Tuesday, ..., 7=Sunday
+  start_date: Date;
+  end_date?: Date; // NULL means indefinite
+  occurrences?: number; // Alternative to end_date
+
+  // Trip template
+  pickup_destination_id?: number;
+  pickup_address?: string;
+  pickup_time_of_day: string; // TIME format 'HH:MM:SS'
+
+  appointment_destination_id?: number;
+  appointment_address?: string;
+  appointment_time_offset?: string; // INTERVAL format (e.g., '1 hour')
+
+  dropoff_destination_id?: number;
+  dropoff_address?: string;
+
+  // Optional return trip
+  has_return?: boolean;
+  return_pickup_time_offset?: string; // INTERVAL format
+  return_pickup_destination_id?: number;
+  return_pickup_address?: string;
+
+  // Metadata
+  notes?: string;
+  is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }

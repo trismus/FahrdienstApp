@@ -47,9 +47,22 @@ A full-stack web application for medical transport coordination system. This app
 - **Driver Management**: Track drivers and vehicle information
   - Availability status management
   - License and vehicle details
-- **Trip Coordination**: Full trip lifecycle management
-  - Schedule new trips with patient and driver assignment
-  - Track pickup and dropoff locations
+  - **Weekly Availability Patterns**: Define recurring weekly availability (e.g., "every Monday 08:00-10:00")
+  - Integrated availability grid in driver edit form
+  - Automatic driver availability checking when assigning trips
+- **Destination Management**: Manage medical facilities and locations
+  - Support for hospitals, clinics, practices, rehab centers, pharmacies
+  - Reusable destination database
+  - Quick selection in trip planning
+- **Enhanced Trip Coordination**: Full trip lifecycle management with appointment support
+  - **Three Time Points**:
+    - Initial pickup (patient location)
+    - Appointment time (at medical facility)
+    - Optional return pickup (after appointment)
+  - **Recurring Trip Series**: Create trip series (e.g., "every Monday and Friday for 4 weeks")
+  - Flexible location management (saved destinations or custom addresses)
+  - Separate driver assignment for return trips
+  - Automatic driver availability validation
   - Distance and time tracking
 - **Status Tracking**: Real-time trip status updates
   - Scheduled → In Progress → Completed/Cancelled
@@ -318,14 +331,51 @@ The frontend will be running at `http://localhost:5173`
 - `PUT /api/drivers/:id` - Update driver
 - `DELETE /api/drivers/:id` - Delete driver
 
+### Destinations
+- `GET /api/destinations` - Get all destinations
+- `GET /api/destinations/active` - Get active destinations only
+- `GET /api/destinations/type/:type` - Get destinations by type
+- `GET /api/destinations/:id` - Get destination by ID
+- `POST /api/destinations` - Create new destination
+- `PUT /api/destinations/:id` - Update destination
+- `DELETE /api/destinations/:id` - Delete destination
+
 ### Trips
 - `GET /api/trips` - Get all trips
 - `GET /api/trips/status/:status` - Get trips by status
 - `GET /api/trips/:id` - Get trip by ID
-- `POST /api/trips` - Create new trip
+- `POST /api/trips` - Create new trip (with appointment and return pickup support)
 - `PUT /api/trips/:id` - Update trip
 - `PATCH /api/trips/:id/status` - Update trip status
 - `DELETE /api/trips/:id` - Delete trip
+
+### Recurring Trips
+- `GET /api/recurring-trips` - Get all recurring trip series
+- `GET /api/recurring-trips/patient/:patientId` - Get recurring trips for a patient
+- `GET /api/recurring-trips/:id` - Get recurring trip by ID
+- `POST /api/recurring-trips` - Create new recurring trip series
+- `PUT /api/recurring-trips/:id` - Update recurring trip series
+- `DELETE /api/recurring-trips/:id` - Delete recurring trip series
+- `PATCH /api/recurring-trips/:id/deactivate` - Deactivate recurring trip series
+- `POST /api/recurring-trips/:id/generate` - Generate trip instances from pattern
+- `GET /api/recurring-trips/:id/trips` - Get all trip instances for a series
+
+### Driver Availability
+- **Patterns** (Recurring Weekly Availability):
+  - `GET /api/availability/patterns/driver/:driverId` - Get patterns for a driver
+  - `POST /api/availability/patterns` - Create availability pattern(s)
+  - `DELETE /api/availability/patterns/:id` - Delete a pattern
+  - `DELETE /api/availability/patterns/driver/:driverId` - Delete all patterns for a driver
+- **Bookings** (Specific Date Bookings):
+  - `GET /api/availability/bookings/driver/:driverId` - Get bookings for a driver
+  - `GET /api/availability/bookings/date/:date` - Get all bookings for a date
+  - `POST /api/availability/bookings` - Create a booking
+  - `DELETE /api/availability/bookings/:id` - Delete a booking
+  - `DELETE /api/availability/bookings/trip/:tripId` - Delete bookings for a trip
+- **Availability Check**:
+  - `GET /api/availability/available?date=YYYY-MM-DD&startTime=HH:MM:SS&endTime=HH:MM:SS` - Get available drivers for a time slot
+
+For detailed documentation on the availability system, see [AVAILABILITY_SYSTEM.md](./AVAILABILITY_SYSTEM.md).
 
 ## Development
 
@@ -369,13 +419,20 @@ FahrdienstApp/
 │   ├── src/
 │   │   ├── database/
 │   │   │   ├── connection.ts
-│   │   │   └── schema.sql
+│   │   │   ├── schema.sql
+│   │   │   └── migrations/
+│   │   │       ├── 001_add_destinations.sql
+│   │   │       ├── 002_convert_to_weekly_patterns.sql
+│   │   │       └── 003_add_appointments_and_recurring_trips.sql
 │   │   ├── models/
 │   │   │   └── types.ts
 │   │   ├── routes/
 │   │   │   ├── patient.routes.ts
 │   │   │   ├── driver.routes.ts
-│   │   │   └── trip.routes.ts
+│   │   │   ├── destination.routes.ts
+│   │   │   ├── trip.routes.ts
+│   │   │   ├── recurring-trip.routes.ts
+│   │   │   └── availability.routes.ts
 │   │   └── server.ts
 │   ├── Dockerfile
 │   ├── .dockerignore
@@ -388,7 +445,9 @@ FahrdienstApp/
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── Patients.tsx
 │   │   │   ├── Drivers.tsx
-│   │   │   └── Trips.tsx
+│   │   │   ├── Destinations.tsx
+│   │   │   ├── Trips.tsx
+│   │   │   └── DriverAvailability.tsx
 │   │   ├── services/
 │   │   │   └── api.ts
 │   │   ├── App.tsx
@@ -401,7 +460,10 @@ FahrdienstApp/
 │   └── .env.example
 ├── docker-compose.yml
 ├── .env.docker
-└── README.md
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+└── AVAILABILITY_SYSTEM.md
 ```
 
 ## Troubleshooting
